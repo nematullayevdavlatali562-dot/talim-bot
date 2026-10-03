@@ -13,13 +13,7 @@ from aiogram.types import (
     ReplyKeyboardMarkup,
     ReplyKeyboardRemove,
 )
-        BufferedInputFile,
-
-from PIL import Image, ImageDraw, ImageFont
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-
-from keep_alive import keep_alive
+from aiogram.types import BufferedInputFile, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, Message, ReplyKeyboardMarkup
 
 keep_alive()
 

@@ -13,7 +13,7 @@ from aiogram.types import (
     ReplyKeyboardMarkup,
     ReplyKeyboardRemove,
 )
-import google.generativeai as genai
+bot.py
 from PIL import Image, ImageDraw, ImageFont
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas

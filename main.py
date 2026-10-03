@@ -23,7 +23,7 @@ from keep_alive import keep_alive
 keep_alive()
 
 # === SOZLAMALAR ===
-BOT_TOKEN = "8786713515:AAEyZWVNBZUCpgQOdbK5VNESj4GtDplEnCA"
+BOT_TOKEN = "8786713515:AAEMyr37l9j2BGQE_WBGweHogtzS-fEx9uU"
 GEMINI_API_KEY = "AQ.Ab8RN6IRs76D4q74Fkce8r_ezqT0UDB-xZIhIKiGi36Mwmjb_A"
 
 genai.configure(api_key=GEMINI_API_KEY)

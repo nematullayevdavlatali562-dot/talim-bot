@@ -14,9 +14,9 @@ import google.generativeai as genai
 from openai import OpenAI
 
 # Token va API kalitlar
-BOT_TOKEN = "8786713515:AAGnN4qNudzmaEv5EGkd2SBsmf9OhPBO7u4"
+BOT_TOKEN = "8786713515:AAGnN4qNudzmaEv5EGkd2SBsmf9OhPBO7u4
 GEMINI_API_KEY = "AQ.Ab8RN6IKtpvUlEoFSaYyf0K9v6KGOjKrcT38geDNewND1DIMlA"
-OPENAI_API_KEY =   "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
+OPENAI_API_KEY = "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"
 
 # Gemini sozlamasi (Nazorat ishi va Slayd uchun)
 genai.configure(api_key=GEMINI_API_KEY)

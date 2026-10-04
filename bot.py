@@ -13,10 +13,10 @@ from aiogram.fsm.context import FSMContext
 import google.generativeai as genai
 from openai import OpenAI
 
-# Token va API kalitlar (To'g'ridan-to'g'ri kiritilgan)
-BOT_TOKEN = "8786713515:AAGnN4qNudzmaEv5EGkd2SBsmf9OhPBO7u4"
-GEMINI_API_KEY = "AQ.Ab8RN6IKtpvUlEoFSaYyf0K9v6KGOjKrcT38geDNewND1DIMlA" # Render Environment'dagi o'zingizning to'liq Gemini kalitingizni yozasiz
-OPENAI_API_KEY = "AQ.Ab8RN6IKtpvUlEoFSaYyf0K9v6KGOjKrcT38geDNewND1DIMlA"   # Render Environment'dagi o'zingizning to'liq OpenAI kalitingizni yozasiz
+# Token va API kalitlar
+BOT_TOKEN = "8786713515:AAEMyr37l9j2BGQE_WBGweHogtzS-fEx9uU"
+GEMINI_API_KEY = "BURAGA_GEMINI_API_KEYINGIZNI_YOZING"
+OPENAI_API_KEY = "BURAGA_OPENAI_API_KEYINGIZNI_YOZING"
 
 # Gemini sozlamasi (Nazorat ishi va Slayd uchun)
 genai.configure(api_key=GEMINI_API_KEY)
@@ -27,13 +27,13 @@ openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
 dp = Dispatcher()
 
-# Bot holatlari (FSM)
+# Bot holatlari (FSM - State Management)
 class BotStates(StatesGroup):
     nazorat = State()
     slayd = State()
     referat = State()
 
-# Pastki doimiy menyu tugmalari (/start bosganda chiqib turadi)
+# Doimiy pastdagi menyu tugmalari
 main_menu_keyboard = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="📝 Nazorat ishi"), KeyboardButton(text="📊 Slayd (Gamma)")],
@@ -52,32 +52,32 @@ async def command_start_handler(message: Message, state: FSMContext) -> None:
         reply_markup=main_menu_keyboard
     )
 
-# 🛑 To'xtatish (yoki /stop buyrug'i)
+# 🛑 To'xtatish / Stop buyrug'i
 @dp.message(F.text == "🛑 To'xtatish")
 @dp.message(Command("stop"))
 async def stop_handler(message: Message, state: FSMContext) -> None:
     await state.clear()
     await message.answer("Jarayon to'xtatildi. Asosiy menyudasiz.", reply_markup=main_menu_keyboard)
 
-# 1. Nazorat ishi (Gemini orqali)
+# 1. Nazorat ishi bo'limi (Gemini)
 @dp.message(F.text == "📝 Nazorat ishi")
 async def nazorat_menu(message: Message, state: FSMContext) -> None:
     await state.set_state(BotStates.nazorat)
     await message.answer("📝 Nazorat ishi savolini yoki shartini yuboring. Gemini yordamida qadam-baqadam yechib beraman.")
 
-# 2. Slayd (Gamma uslubida tuzilma)
+# 2. Slayd bo'limi (Gamma uslubida tuzilma)
 @dp.message(F.text == "📊 Slayd (Gamma)")
 async def slayd_menu(message: Message, state: FSMContext) -> None:
     await state.set_state(BotStates.slayd)
     await message.answer("📊 Slayd uchun mavzu yuboring. Gamma.app orqali taqdimot qilish uchun har bir slaydning sarlavhasi va asosiy matni tuzib beraman.")
 
-# 3. Referat / Mustaqil ish (ChatGPT orqali)
+# 3. Referat / Mustaqil ish bo'limi (ChatGPT)
 @dp.message(F.text == "📚 Referat / Mustaqil ish")
 async def referat_menu(message: Message, state: FSMContext) -> None:
     await state.set_state(BotStates.referat)
     await message.answer("📚 Referat yoki mustaqil ish mavzusini yuboring. ChatGPT yordamida keng qamrovli matn tayyorlab beraman.")
 
-# --- AI BILAN ISHLASH QISMI ---
+# --- AI BILAN ISHLASH JARAYoni ---
 
 @dp.message(BotStates.nazorat, F.text)
 async def process_nazorat(message: Message) -> None:
@@ -112,6 +112,7 @@ async def process_referat(message: Message) -> None:
     except Exception as e:
         await message.answer(f"ChatGPT'da xatolik yuz berdi: {e}")
 
+# Agar menyudan tashqari matn yozilsa
 @dp.message()
 async def default_handler(message: Message) -> None:
     await message.answer("Iltimos, pastdagi tugmalardan birini tanlang.", reply_markup=main_menu_keyboard)

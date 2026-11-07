@@ -1,5 +1,5 @@
 import asyncio
-import io
+import base64
 import logging
 import os
 import sys
@@ -8,15 +8,15 @@ from aiogram.filters import Command
 from aiohttp import web
 import google.generativeai as genai
 
-# --- SOZLAMALAR ---
-TELEGRAM_BOT_TOKEN = os.getenv("8786713515:AAGnN4qNudzmaEv5EGkd2SBsmf9OhPBO7u4")
-GEMINI_API_KEY = os.getenv("AQ.Ab8RN6JCnhISnIJDz0edZzxhx1jTykP8BHMoMsks4Q--mTAQ2A")  # Gemini API kalitingiz
+# --- TOKEN VA KALITLARNI SHU YERGA TO'G'RIDAN-TO'G'RI YOZING ---
+TELEGRAM_BOT_TOKEN = "8786713515:AAGnN4qNudzmaEv5EGkd2SBsmf9OhPBO7u4"
+GEMINI_API_KEY = "AQ.Ab8RN6JCnhISnIJDz0edZzxhx1jTykP8BHMoMsks4Q--mTAQ2A"
 PORT = int(os.getenv("PORT", 10000))
 
 # Gemini API ni sozlash
 genai.configure(api_key=GEMINI_API_KEY)
 
-# Gemini modelini tanlash (multimodal uchun gemini-1.5-pro yoki gemini-1.5-flash)
+# Gemini modelini sozlash
 generation_config = {
     "temperature": 0.7,
 }
@@ -49,7 +49,6 @@ async def handle_text_message(message: types.Message):
     processing_msg = await message.answer("⏳ Savolingiz tahlil qilinmoqda...")
 
     try:
-        # Gemini orqali matnli javob olish
         response = model.generate_content(user_text)
         answer_text = response.text
         
@@ -68,12 +67,9 @@ async def handle_photo_message(message: types.Message):
         file_info = await bot.get_file(photo.file_id)
         photo_bytes = await bot.download_file(file_info.file_path)
         
-        # Rasmni bytes formatida o'qish
         image_bytes = photo_bytes.read()
-        
         caption_text = message.caption if message.caption else "Ushbu rasmdagi masala yoki topshiriqni batafsil yechib tushuntirib bering."
 
-        # Gemini'ga rasm va matnni birga yuborish uchun to'g'ri format
         image_part = {
             "mime_type": "image/jpeg",
             "data": image_bytes
@@ -88,7 +84,6 @@ async def handle_photo_message(message: types.Message):
         await bot.delete_message(chat_id=message.chat.id, message_id=processing_msg.message_id)
         await message.answer(f"❌ Rasmni o'qishda xatolik yuz berdi: {str(e)}")
 
-# Render port talabini qondirish uchun oddiy HTTP sahifa
 async def handle_ping(request):
     return web.Response(text="Bot ishlayapti!")
 
@@ -104,14 +99,10 @@ async def main():
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
     print("🤖 Gemini Ta'lim boti ishga tushdi...")
     
-    # Soxta veb-serverni fonda yurgizish (Render port talabidan o'tish uchun)
     asyncio.create_task(web_server())
     
-    # Asosiy bot long-polling
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
     asyncio.run(main())
-TELEGRAM_BOT_TOKEN = os.getenv("8786713515:AAGnN4qNudzmaEv5EGkd2SBsmf9OhPBO7u4")
-GEMINI_API_KEY = os.getenv("AQ.Ab8RN6JCnhISnIJDz0edZzxhx1jTykP8BHMoMsks4Q--mTAQ2A")

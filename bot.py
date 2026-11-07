@@ -1,126 +1,136 @@
 import asyncio
+import base64
 import logging
 import sys
-from aiogram import Bot, Dispatcher, F, html
-from aiogram.client.default import DefaultBotProperties
-from aiogram.enums import ParseMode
-from aiogram.filters import CommandStart, Command
-from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
-from aiogram.fsm.state import State, StatesGroup
-from aiogram.fsm.context import FSMContext
+from aiogram import Bot, Dispatcher, F, types
+from aiogram.filters import Command
+from anthropic import Anthropic
 
-# AI Kutubxonalari
-import google.generativeai as genai
-from openai import OpenAI
+# --- SOZLAMALAR ---
+# Tokenlaringizni shu yerga yozing
+TELEGRAM_BOT_TOKEN = "SIZNING_TELEGRAM_BOT_TOKENINGIZ"
+CLAUDE_API_KEY = "SIZNING_CLAUDE_API_KALITINGIZ"
 
-# Token va API kalitlar
-BOT_TOKEN = "8786713515:AAGnN4qNudzmaEv5EGkd2SBsmf9OhPBO7u4"
-GEMINI_API_KEY = "AQ.Ab8RN6IKtpvUlEoFSaYyf0K9v6KGOjKrcT38geDNewND1DIMlA"
-OPENAI_API_KEY = "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"
-
-# Gemini sozlamasi (Nazorat ishi va Slayd uchun)
-genai.configure(api_key=GEMINI_API_KEY)
-gemini_model = genai.GenerativeModel("gemini-1.5-flash")
-
-# OpenAI (ChatGPT) sozlamasi (Referat / Mustaqil ish uchun)
-openai_client = OpenAI(api_key=OPENAI_API_KEY)
-
+# Bot va Claude mijozini yaratish
+bot = Bot(token=TELEGRAM_BOT_TOKEN)
 dp = Dispatcher()
+anthropic_client = Anthropic(api_key=CLAUDE_API_KEY)
 
-# Bot holatlari (FSM - State Management)
-class BotStates(StatesGroup):
-    nazorat = State()
-    slayd = State()
-    referat = State()
-
-# Doimiy pastdagi menyu tugmalari
-main_menu_keyboard = ReplyKeyboardMarkup(
-    keyboard=[
-        [KeyboardButton(text="📝 Nazorat ishi"), KeyboardButton(text="📊 Slayd (Gamma)")],
-        [KeyboardButton(text="📚 Referat / Mustaqil ish"), KeyboardButton(text="🛑 To'xtatish")]
-    ],
-    resize_keyboard=True
+# Claude uchun o'quv yordamchisi roli
+SYSTEM_PROMPT = (
+    "Siz maktab o'quvchilari va talabalarga ta'lim jarayonida, uy vazifalarini bajarishda, "
+    "formula va qonuniyatlarni tushuntirishda yordam beruvchi aqlli sun'iy intellekt ustozisiz. "
+    "Javoblaringizni doimo tushunarli, bosqichma-bosqich va o'zbek tilida bering."
 )
 
-# /start buyrug'i
-@dp.message(CommandStart())
-async def command_start_handler(message: Message, state: FSMContext) -> None:
-    await state.clear()
-    await message.answer(
-        f"Assalom alaykum, {html.bold(message.from_user.full_name)}!\n"
-        "Kerakli bo'limni pastdagi tugmalardan tanlang:",
-        reply_markup=main_menu_keyboard
+@dp.message(Command("start"))
+async def start_handler(message: types.Message):
+    """Bot ishga tushganda yoki /start bosilganda ishlaydi"""
+    welcome_text = (
+        "Assalomu alaykum! 📚\n\n"
+        "Men sizning shaxsiy ta'lim yordamchingizman. Menga quyidagilarni yuborishingiz mumkin:\n"
+        "• Matn ko'rinishidagi savollar va masalalar\n"
+        "• Uy vazifasi tushirilgan **rasmlar** (kitob yoki daftar fotosi)\n\n"
+        "Qani, qanday savolingiz bor?"
     )
+    await message.answer(welcome_text)
 
-# 🛑 To'xtatish / Stop buyrug'i
-@dp.message(F.text == "🛑 To'xtatish")
-@dp.message(Command("stop"))
-async def stop_handler(message: Message, state: FSMContext) -> None:
-    await state.clear()
-    await message.answer("Jarayon to'xtatildi. Asosiy menyudasiz.", reply_markup=main_menu_keyboard)
 
-# 1. Nazorat ishi bo'limi (Gemini)
-@dp.message(F.text == "📝 Nazorat ishi")
-async def nazorat_menu(message: Message, state: FSMContext) -> None:
-    await state.set_state(BotStates.nazorat)
-    await message.answer("📝 Nazorat ishi savolini yoki shartini yuboring. Gemini yordamida qadam-baqadam yechib beraman.")
+@dp.message(F.text)
+async def handle_text_message(message: types.Message):
+    """Foydalanuvchidan matn kelganda ishlaydi"""
+    user_text = message.text
+    
+    # Jarayon haqida xabar berish
+    processing_msg = await message.answer("⏳ Savolingiz tahlil qilinmoqda...")
 
-# 2. Slayd bo'limi (Gamma uslubida tuzilma)
-@dp.message(F.text == "📊 Slayd (Gamma)")
-async def slayd_menu(message: Message, state: FSMContext) -> None:
-    await state.set_state(BotStates.slayd)
-    await message.answer("📊 Slayd uchun mavzu yuboring. Gamma.app orqali taqdimot qilish uchun har bir slaydning sarlavhasi va asosiy matni tuzib beraman.")
-
-# 3. Referat / Mustaqil ish bo'limi (ChatGPT)
-@dp.message(F.text == "📚 Referat / Mustaqil ish")
-async def referat_menu(message: Message, state: FSMContext) -> None:
-    await state.set_state(BotStates.referat)
-    await message.answer("📚 Referat yoki mustaqil ish mavzusini yuboring. ChatGPT yordamida keng qamrovli matn tayyorlab beraman.")
-
-# --- AI BILAN ISHLASH JARAYoni ---
-
-@dp.message(BotStates.nazorat, F.text)
-async def process_nazorat(message: Message) -> None:
     try:
-        prompt = f"Sen kuchli o'qituvchisan. Ushbu nazorat ishi savoliga mukammal va tushunarli javob yozib ber: {message.text}"
-        response = gemini_model.generate_content(prompt)
-        await message.answer(response.text)
-    except Exception as e:
-        await message.answer(f"Xatolik yuz berdi: {e}")
-
-@dp.message(BotStates.slayd, F.text)
-async def process_slayd(message: Message) -> None:
-    try:
-        prompt = f"Gamma.app orqali slayd qilish uchun quyidagi mavzu bo'yicha 7-10 ta slayddan iborat tuzilma (har bir slaydning sarlavhasi va asosiy matni) tuzib ber: {message.text}"
-        response = gemini_model.generate_content(prompt)
-        await message.answer(response.text)
-    except Exception as e:
-        await message.answer(f"Xatolik yuz berdi: {e}")
-
-@dp.message(BotStates.referat, F.text)
-async def process_referat(message: Message) -> None:
-    try:
-        completion = openai_client.chat.completions.create(
-            model="gpt-4o-mini",
+        # Claude API orqali javob olish
+        response = anthropic_client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=2000,
+            system=SYSTEM_PROMPT,
             messages=[
-                {"role": "system", "content": "Sen akademik referat va mustaqil ishlar yozuvchi professional yordamchisan."},
-                {"role": "user", "content": f"Quyidagi mavzu bo'yicha kirish, asosiy qism, reja va xulosa qilib mustaqil ish yozib ber: {message.text}"}
+                {"role": "user", "content": user_text}
             ]
         )
-        answer = completion.choices[0].message.content
-        await message.answer(answer)
+        
+        answer_text = response.content[0].text
+        
+        # Vaqtinchalik xabarni o'chirib, javobni yuborish
+        await bot.delete_message(chat_id=message.chat.id, message_id=processing_msg.message_id)
+        await message.answer(answer_text)
+
     except Exception as e:
-        await message.answer(f"ChatGPT'da xatolik yuz berdi: {e}")
+        await bot.delete_message(chat_id=message.chat.id, message_id=processing_msg.message_id)
+        await message.answer(f"❌ Xatolik yuz berdi: {str(e)}")
 
-# Agar menyudan tashqari matn yozilsa
-@dp.message()
-async def default_handler(message: Message) -> None:
-    await message.answer("Iltimos, pastdagi tugmalardan birini tanlang.", reply_markup=main_menu_keyboard)
 
-async def main() -> None:
-    bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+@dp.message(F.photo)
+async def handle_photo_message(message: types.Message):
+    """Foydalanuvchidan rasm (uy vazifasi fotosi) kelganda ishlaydi"""
+    processing_msg = await message.answer("🖼 Rasm tahlil qilinmoqda, biroz kuting...")
+
+    try:
+        # Eng sifatli rasmni olish
+        photo = message.photo[-1]
+        
+        # Telegram serveridan rasmni yuklab olish
+        file_info = await bot.get_file(photo.file_id)
+        photo_bytes = await bot.download_file(file_info.file_path)
+        
+        # Rasmni Claude talab qiladigan Base64 formatiga o'tkazish
+        base64_image = base64.b64encode(photo_bytes.read()).decode("utf-8")
+        
+        # Agar foydalanuvchi rasm bilan birga izoh yozgan bo'lsa o'shani olamiz
+        caption_text = message.caption if message.caption else "Ushbu rasmdagi masala yoki topshiriqni batafsil yechib tushuntirib bering."
+
+        # Claude APIga multimodal (matn + rasm) so'rov yuborish
+        response = anthropic_client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=2000,
+            system=SYSTEM_PROMPT,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": "image/jpeg",
+                                "data": base64_image,
+                            },
+                        },
+                        {
+                            "type": "text",
+                            "text": caption_text
+                        }
+                    ],
+                }
+            ],
+        )
+        
+        answer_text = response.content[0].text
+        
+        # Vaqtinchalik xabarni o'chirib, natijani yuborish
+        await bot.delete_message(chat_id=message.chat.id, message_id=processing_msg.message_id)
+        await message.answer(answer_text)
+
+    except Exception as e:
+        await bot.delete_message(chat_id=message.chat.id, message_id=processing_msg.message_id)
+        await message.answer(f"❌ Rasmni o'qishda xatolik yuz berdi: {str(e)}")
+
+
+async def main():
+    """Botni ishga tushiruvchi asosiy funksiya"""
+    logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+    print("🤖 Ta'lim boti muvaffaqiyatli ishga tushdi...")
+    
+    # Eski xabarlarni tozalab, yangilarini qabul qilishni boshlash
+    await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 
+
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, stream=sys.stdout)
     asyncio.run(main())

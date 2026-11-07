@@ -10,7 +10,7 @@ import aiohttp
 
 # --- TOKEN VA KALITLAR ---
 TELEGRAM_BOT_TOKEN = "8786713515:AAGnN4qNudzmaEv5EGkd2SBsmf9OhPBO7u4"
-GEMINI_AUTH_TOKEN = "AQ.Ab8RN6JwfmjzvYAQF14cHsTxM9MTGUJhULGdOTOtKN41HfFzpQ"  # O'zingizning AQ. bilan boshlanadigan tokeningiz
+GEMINI_AUTH_TOKEN = "AQ.Ab8RN6LcH6Ph3Fb_l5e6DQKOZuuU15HOL-uD3QYy8FL0lry9jw"  # O'zingizning AQ. bilan boshlanadigan kalitingizni shu yerga yozing
 PORT = int(os.getenv("PORT", 10000))
 
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
@@ -23,15 +23,13 @@ SYSTEM_INSTRUCTION = (
 )
 
 async def call_gemini_api(prompt_text: str, image_bytes: bytes = None):
-    """Google Cloud Auth Token (AQ.) yordamida Gemini REST API ga so'rov yuborish"""
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+    # API kalitni URL orqali uzatish usuli (AQ. kalitlari uchun eng to'g'ri yo'l)
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_AUTH_TOKEN}"
     
     headers = {
-        "Authorization": f"Bearer {GEMINI_AUTH_TOKEN}",
         "Content-Type": "application/json"
     }
     
-    # Qismlarni tayyorlash
     parts = [{"text": prompt_text}]
     
     if image_bytes:
@@ -65,7 +63,6 @@ async def call_gemini_api(prompt_text: str, image_bytes: bytes = None):
             if response.status != 200:
                 raise Exception(f"API xatosi ({response.status}): {res_json}")
             
-            # Javobni ajratib olish
             try:
                 return res_json["candidates"][0]["content"]["parts"][0]["text"]
             except (KeyError, IndexError):
@@ -127,7 +124,7 @@ async def web_server():
 
 async def main():
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
-    print("🤖 Gemini Ta'lim boti (Auth Token rejimida) ishga tushdi...")
+    print("🤖 Gemini Ta'lim boti ishga tushdi...")
     
     asyncio.create_task(web_server())
     

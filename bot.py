@@ -8,8 +8,8 @@ from anthropic import Anthropic
 
 # --- SOZLAMALAR ---
 # Tokenlaringizni shu yerga yozing
-TELEGRAM_BOT_TOKEN = "SIZNING_TELEGRAM_BOT_TOKENINGIZ"
-CLAUDE_API_KEY = "SIZNING_CLAUDE_API_KALITINGIZ"
+TELEGRAM_BOT_TOKEN = "8786713515:AAGnN4qNudzmaEv5EGkd2SBsmf9OhPBO7u4"
+CLAUDE_API_KEY = "AQ.Ab8RN6JCnhISnIJDz0edZzxhx1jTykP8BHMoMsks4Q--mTAQ2A"
 
 # Bot va Claude mijozini yaratish
 bot = Bot(token=TELEGRAM_BOT_TOKEN)

@@ -113,3 +113,5 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+TELEGRAM_BOT_TOKEN = os.getenv("8786713515:AAGnN4qNudzmaEv5EGkd2SBsmf9OhPBO7u4")
+GEMINI_API_KEY = os.getenv("AQ.Ab8RN6JCnhISnIJDz0edZzxhx1jTykP8BHMoMsks4Q--mTAQ2A")

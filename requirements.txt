@@ -1,5 +1,7 @@
 aiogram>=3.0.0
-anthropic
+google-generativeai
+aiohttp
 python-dotenv
+
 
 
